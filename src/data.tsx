@@ -10,6 +10,7 @@ import {
 export const VIDEO_SRC = 'https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260511_080827_a9e5ad52-b6ee-4e79-b393-d936f179cfd7.mp4';
 
 export const NAV_LINKS = [
+
   { name: 'About', href: '#about' },
   { name: 'Moments', href: '#moments' },
   { name: 'Projects', href: '#projects' },

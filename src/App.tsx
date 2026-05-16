@@ -8,24 +8,22 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { gsap } from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { useEffect, useRef, useState } from 'react';
+import { gsap, ScrollTrigger } from 'gsap/all';
+
+
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ChevronLeft,
   ChevronRight,
   Cpu,
   Smartphone,
-  Globe,
   Code2,
   Briefcase,
   GraduationCap,
-  User,
   ExternalLink,
   Github,
   Instagram,
-  Monitor,
   Zap,
   Radio,
   Layers
@@ -33,14 +31,15 @@ import {
 
 gsap.registerPlugin(ScrollTrigger);
 
-import { 
-  NAV_LINKS, 
-  VIDEO_SRC, 
-  PROJECTS, 
-  SKILLS, 
+import {
+  NAV_LINKS,
+  VIDEO_SRC,
+  PROJECTS,
+  SKILLS,
   MOMENTS,
-  INSTA_PROFILE_IMG 
+  INSTA_PROFILE_IMG
 } from './data';
+
 
 const LogoMark = () => (
   <svg width="44" height="26" viewBox="0 0 44 26" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -52,14 +51,15 @@ const LogoMark = () => (
 
 export default function App() {
   const [mounted, setMounted] = useState(false);
-  const [framesReady, setFramesReady] = useState(false);
   const [activeProject, setActiveProject] = useState(0);
   const [activeMoment, setActiveMoment] = useState(0);
   const [activeNav, setActiveNav] = useState('Projects');
 
-  const videoRef = useRef<HTMLVideoElement>(null);
+
   const videoBgRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const navRef = useRef<HTMLDivElement>(null);
+
   const bubbleRef = useRef<HTMLDivElement>(null);
   const navContainerRef = useRef<HTMLDivElement>(null);
 
@@ -70,56 +70,82 @@ export default function App() {
     setMounted(true);
   }, []);
 
-  // Effect 1: Video Ready
+  // Effect 1: Video Scrubbing Logic
+
+
   useEffect(() => {
+    if (typeof ScrollTrigger === 'undefined') return;
+
+    gsap.registerPlugin(ScrollTrigger);
+
     const video = videoRef.current;
     if (!video) return;
 
-    const handleLoadedMetadata = () => {
-      setFramesReady(true);
-      // Pause video just in case to prevent any auto-playback
+    // Warm up the video decoder - this helps with smoother scrubbing
+    video.play().then(() => {
       video.pause();
+    }).catch(() => {
+      // Autoplay policy might block this, which is fine
+    });
+
+    let scrubbingTween: gsap.core.Tween | null = null;
+
+    const initScrub = () => {
+      if (!video.duration || isNaN(video.duration)) return;
+
+      if (scrubbingTween) {
+        if (scrubbingTween.scrollTrigger) scrubbingTween.scrollTrigger.kill();
+        scrubbingTween.kill();
+      }
+
+      // Using a very small scrub value (0.1) for near-instant response
+      // while still maintaining a tiny bit of smoothness to prevent jitter.
+      // This makes the "calculation" feel continuous.
+      scrubbingTween = gsap.to(video, {
+        currentTime: video.duration,
+        ease: "none",
+        scrollTrigger: {
+          trigger: "body",
+          start: "top top",
+          end: "bottom bottom",
+          scrub: 0.1,
+          invalidateOnRefresh: true,
+          // Force frequent updates
+          onUpdate: (self) => {
+            // Optional: log progress for debugging
+            // console.log("Scrubbing progress:", self.progress);
+          }
+        }
+      });
+
+      console.log("Continuous video scrubbing initialized. Duration:", video.duration);
     };
 
+    video.addEventListener('loadedmetadata', initScrub);
+    video.addEventListener('durationchange', initScrub);
+
     if (video.readyState >= 1) {
-      handleLoadedMetadata();
-    } else {
-      video.addEventListener('loadedmetadata', handleLoadedMetadata);
+      initScrub();
     }
 
+    const timeout = setTimeout(() => {
+      if (video.duration && !scrubbingTween) initScrub();
+    }, 1000);
+
     return () => {
-      video.removeEventListener('loadedmetadata', handleLoadedMetadata);
+      video.removeEventListener('loadedmetadata', initScrub);
+      video.removeEventListener('durationchange', initScrub);
+      clearTimeout(timeout);
+      if (scrubbingTween) {
+        if (scrubbingTween.scrollTrigger) scrubbingTween.scrollTrigger.kill();
+        scrubbingTween.kill();
+      }
     };
   }, []);
 
-  // Effect 2: Scroll-driven Scrub
-  useEffect(() => {
-    if (!framesReady) return;
 
-    const video = videoRef.current;
-    if (!video) return;
 
-    // We can use a requestAnimationFrame loop to smooth out the scrub if needed,
-    // but GSAP's scrub with a duration handles the smoothing value well.
-    const st = ScrollTrigger.create({
-      trigger: "body",
-      start: "top top",
-      end: "bottom bottom",
-      scrub: 1, // Smooth scrub
-      onUpdate: (self) => {
-        if (video.duration) {
-          // Wrap in a try-catch as setting currentTime can sometimes throw if not fully ready
-          try {
-            video.currentTime = self.progress * video.duration;
-          } catch (e) { }
-        }
-      }
-    });
 
-    return () => {
-      st.kill();
-    };
-  }, [framesReady]);
 
   // Effect 3: Parallax mouse tracking
   useEffect(() => {
@@ -204,26 +230,32 @@ export default function App() {
   return (
     <div className="bg-black text-white font-body selection:bg-white selection:text-black">
       {/* Background Video */}
-      <div ref={videoBgRef} className="fixed top-0 left-0 w-full h-full z-0 scale-[1.1] origin-center opacity-100">
+      <div ref={videoBgRef} className="fixed top-0 left-0 w-full h-full z-0 scale-[1.05] origin-center opacity-100 will-change-transform bg-black">
         <video
           ref={videoRef}
           src={VIDEO_SRC}
-          muted
           playsInline
+          muted
           preload="auto"
-          crossOrigin="anonymous"
-          className="w-full h-full object-cover"
-          style={{ display: 'block' }}
+          className="w-full h-full object-cover will-change-transform"
+          style={{
+            opacity: mounted ? 1 : 0,
+            transition: 'opacity 1.5s ease-in-out'
+          }}
         />
+
       </div>
+
+
 
       {/* Nav */}
       <nav className="fixed top-8 left-1/2 -translate-x-1/2 z-[100] whitespace-nowrap">
         <div ref={navRef} className="liquid-glass flex items-center gap-8 rounded-full px-6 py-3 relative">
           <div
             ref={bubbleRef}
-            className="absolute top-0 left-0 bg-white/10 backdrop-blur-xl border border-white/20 rounded-full z-0 h-full"
+            className="absolute top-0 left-0 bg-white/15 backdrop-blur-3xl border border-white/30 rounded-full z-0 h-full shadow-[0_0_20px_rgba(255,255,255,0.05)]"
           />
+
           <LogoMark />
           <div ref={navContainerRef} className="hidden md:flex items-center gap-6 relative z-10">
             {NAV_LINKS.map((link) => (
@@ -247,7 +279,7 @@ export default function App() {
           <div className={`transition-all duration-1000 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-20'}`}>
             <span className="text-white/40 uppercase tracking-[0.4em] text-[10px] sm:text-xs mb-8 block text-center">Odisha, India</span>
             <h1 className="hero-title mb-12">Malayansu Bisi</h1>
-            <div className="max-w-xl mx-auto text-center space-y-6">
+            <div className="max-w-xl mx-auto text-center space-y-6 liquid-glass p-8 sm:p-12 rounded-[2.5rem]">
               <p className="text-lg sm:text-xl font-light text-white/70 leading-relaxed">
                 High School Student, <span className="text-white font-normal italic">Tech Builder</span> & Aspiring Educator.
               </p>
@@ -293,7 +325,7 @@ export default function App() {
             <div className="flex flex-col justify-center">
               <span className="text-white/30 uppercase tracking-[0.3em] text-[10px] mb-4 block">About Me</span>
               <h2 className="text-5xl sm:text-7xl font-heading italic leading-none mb-10">Coder. Tinkerer. <br /> Visionary.</h2>
-              <div className="space-y-6 text-lg font-light text-white/60 leading-relaxed max-w-xl">
+              <div className="space-y-6 text-lg font-light text-white/60 leading-relaxed max-w-xl liquid-glass p-8 sm:p-12 rounded-[2.5rem]">
                 <p>
                   Based in Odisha, I specialize in blending the physical and digital worlds. Whether it's editing cinematic videos or automating home tasks with microcontrollers, I thrive on the process of creation from scratch.
                 </p>
@@ -322,27 +354,26 @@ export default function App() {
               <span className="text-white/30 uppercase tracking-[0.3em] text-[10px] mb-4 block">Visual Stories</span>
               <h2 className="text-5xl sm:text-7xl font-heading italic">Instagram Highlights</h2>
             </div>
-            
+
             <div className="flex flex-col md:flex-row gap-4 h-[600px]">
               {MOMENTS.map((moment, i) => (
                 <motion.div
                   key={moment.id}
                   layout
                   onClick={() => setActiveMoment(i)}
-                  className={`relative cursor-pointer overflow-hidden rounded-[2rem] transition-all duration-700 ease-[0.16, 1, 0.3, 1] ${
-                    activeMoment === i ? 'flex-[4]' : 'flex-[1] grayscale hover:grayscale-0'
-                  }`}
+                  className={`relative cursor-pointer overflow-hidden rounded-[2rem] transition-all duration-700 ease-[0.16, 1, 0.3, 1] ${activeMoment === i ? 'flex-[4]' : 'flex-[1] grayscale hover:grayscale-0'
+                    }`}
                 >
-                  <img 
-                    src={moment.image} 
+                  <img
+                    src={moment.image}
                     className="absolute inset-0 w-full h-full object-cover"
                     alt={moment.title}
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                  
+
                   <AnimatePresence>
                     {activeMoment === i && (
-                      <motion.div 
+                      <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: 20 }}
@@ -360,9 +391,9 @@ export default function App() {
                           <p className="text-sm font-light text-white/80 leading-relaxed max-w-[70%]">
                             {moment.description}
                           </p>
-                          <a 
-                            href={moment.link} 
-                            target="_blank" 
+                          <a
+                            href={moment.link}
+                            target="_blank"
                             rel="noopener noreferrer"
                             onClick={(e) => e.stopPropagation()}
                             className="liquid-glass p-3 rounded-full hover:bg-white/20 transition-all active:scale-90"
@@ -480,7 +511,7 @@ export default function App() {
         {/* Section 3: Skills Grid */}
         <section id="skills" className="min-h-screen py-32 px-6 sm:px-12 bg-white/5 backdrop-blur-xl">
           <div className="max-w-7xl mx-auto">
-            <div className="text-center mb-24">
+            <div className="text-center mb-24 liquid-glass-strong p-12 rounded-[3rem] inline-block mx-auto w-full max-w-2xl">
               <span className="text-white/30 uppercase tracking-[0.3em] text-[10px] mb-4 block">Capabilities</span>
               <h2 className="text-5xl sm:text-7xl font-heading italic">Modular Toolkit</h2>
             </div>

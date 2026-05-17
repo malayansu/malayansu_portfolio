@@ -253,8 +253,10 @@ export default function App() {
         <div ref={navRef} className="liquid-glass flex items-center gap-8 rounded-full px-6 py-3 relative">
           <div
             ref={bubbleRef}
-            className="absolute top-0 left-0 bg-white/15 backdrop-blur-3xl border border-white/30 rounded-full z-0 h-full shadow-[0_0_20px_rgba(255,255,255,0.05)]"
+            className="absolute top-0 left-0 bg-white/10 backdrop-blur-3xl border border-white/20 rounded-full z-0 h-full saturate-[1.8]"
           />
+
+
 
           <LogoMark />
           <div ref={navContainerRef} className="hidden md:flex items-center gap-6 relative z-10">
@@ -310,9 +312,10 @@ export default function App() {
               <div className="aspect-square rounded-[3rem] overflow-hidden liquid-glass">
                 <img
                   src="https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&q=80&w=1000"
-                  className="w-full h-full object-cover grayscale opacity-50 contrast-125"
+                  className="w-full h-full object-cover grayscale opacity-20 contrast-125"
                   alt="Workspace"
                 />
+
               </div>
               <div className="absolute -bottom-10 -right-10 bg-white text-black p-10 rounded-[2.5rem] hidden sm:block max-w-[240px]">
                 <p className="text-xs uppercase tracking-widest font-bold mb-4 opacity-40">Identity</p>
@@ -325,13 +328,14 @@ export default function App() {
             <div className="flex flex-col justify-center">
               <span className="text-white/30 uppercase tracking-[0.3em] text-[10px] mb-4 block">About Me</span>
               <h2 className="text-5xl sm:text-7xl font-heading italic leading-none mb-10">Coder. Tinkerer. <br /> Visionary.</h2>
-              <div className="space-y-6 text-lg font-light text-white/60 leading-relaxed max-w-xl liquid-glass p-8 sm:p-12 rounded-[2.5rem]">
+              <div className="space-y-6 text-lg font-light text-white/90 leading-relaxed max-w-xl liquid-glass p-8 sm:p-12 rounded-[2.5rem]">
                 <p>
                   Based in Odisha, I specialize in blending the physical and digital worlds. Whether it's editing cinematic videos or automating home tasks with microcontrollers, I thrive on the process of creation from scratch.
                 </p>
                 <p>
-                  Photography is my second language. I capture moments that speak where words fail—from golden sunsets to the quiet beauty of nature. My goal is to create modern, custom <span className="text-white italic">Glassmorphism</span> interfaces that empower users to control their environment seamlessly.
+                  Photography is my second language. I capture moments that speak where words fail—from golden sunsets to the quiet beauty of nature. My goal is to create modern, custom <span className="text-white font-normal italic underline decoration-white/20 underline-offset-8">Glassmorphism</span> interfaces that empower users to control their environment seamlessly.
                 </p>
+
                 <div className="grid grid-cols-2 gap-10 pt-10 border-t border-white/10">
                   <div>
                     <span className="text-[10px] uppercase tracking-widest block mb-2 text-white/30">Location</span>
